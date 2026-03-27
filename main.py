@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Weekly changelog reporter — posts a summary of new changelog entries to Slack."""
+"""Changelog reporter — posts a summary of new changelog entries to Slack."""
 
 import argparse
 from datetime import datetime, timedelta
@@ -9,7 +9,7 @@ from slack_reporter import build_blocks, post_report
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Post weekly changelog report to Slack")
+    parser = argparse.ArgumentParser(description="Post changelog report to Slack")
     parser.add_argument(
         "--since",
         help="ISO date to look back from (default: 7 days ago)",

@@ -1,5 +1,5 @@
 {
-  description = "Weekly changelog reporter for Slack";
+  description = "Changelog reporter for Slack";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";

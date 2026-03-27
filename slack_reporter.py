@@ -19,7 +19,7 @@ def build_blocks(
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": f"Weekly Changelog Report (since {since})",
+                "text": f"Changelog Report (since {since})",
             },
         }
     )
@@ -30,7 +30,7 @@ def build_blocks(
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": "No new changelog entries this week.",
+                    "text": "No new changelog entries found.",
                 },
             }
         )
@@ -47,7 +47,7 @@ def build_blocks(
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f":warning: *Heads up — this week includes: {', '.join(labels)}*",
+                    "text": f":warning: *Heads up — this report includes: {', '.join(labels)}*",
                 },
             }
         )
@@ -112,7 +112,7 @@ def post_report(
     entries_by_section: dict[str, list[ChangelogEntry]],
     since: str,
 ) -> None:
-    """Post the weekly report to Slack."""
+    """Post the changelog report to Slack."""
     if not config.SLACK_BOT_TOKEN:
         raise RuntimeError("SLACK_BOT_TOKEN environment variable is required to post")
     client = WebClient(token=config.SLACK_BOT_TOKEN)
@@ -120,6 +120,6 @@ def post_report(
 
     client.chat_postMessage(
         channel=config.SLACK_CHANNEL,
-        text=f"Weekly Changelog Report (since {since})",
+        text=f"Changelog Report (since {since})",
         blocks=blocks,
     )
