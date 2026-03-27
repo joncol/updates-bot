@@ -1,6 +1,5 @@
 report:
   #!/usr/bin/env bash
-  set -x
   if [ -z "$SINCE" ]; then
     SINCE=$(date -d '7 days ago' +%Y-%m-%d)
   fi

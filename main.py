@@ -19,6 +19,11 @@ def main() -> None:
         help="Filter commits by author (name or email). Default: all authors",
     )
     parser.add_argument(
+        "--descriptions",
+        action="store_true",
+        help="Include entry descriptions in the report (default: titles only)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the Slack message instead of posting it",
@@ -32,13 +37,13 @@ def main() -> None:
     if args.dry_run:
         import json
 
-        blocks = build_blocks(entries_by_section, since)
+        blocks = build_blocks(entries_by_section, since, include_descriptions=args.descriptions)
         print(json.dumps(blocks, indent=2))
         print()
         total = sum(len(v) for v in entries_by_section.values())
         print(f"Found {total} entries across {len(entries_by_section)} sections.")
     else:
-        post_report(entries_by_section, since)
+        post_report(entries_by_section, since, include_descriptions=args.descriptions)
         total = sum(len(v) for v in entries_by_section.values())
         print(f"Posted report with {total} entries to Slack.")
 

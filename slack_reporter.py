@@ -9,6 +9,8 @@ from changelog_parser import ChangelogEntry
 def build_blocks(
     entries_by_section: dict[str, list[ChangelogEntry]],
     since: str,
+    *,
+    include_descriptions: bool = False,
 ) -> list[dict]:
     """Build Slack Block Kit blocks from grouped changelog entries."""
     blocks: list[dict] = []
@@ -85,10 +87,9 @@ def build_blocks(
         lines = []
         for entry in entries:
             tag_prefix = f"<https://scriveab.atlassian.net/browse/{entry.tag}|[{entry.tag}]> " if entry.tag else ""
-            author_suffix = f" — _{entry.author}_" if not single_author and entry.author else ""
+            author_suffix = f" — ({entry.author})" if not single_author and entry.author else ""
             lines.append(f"• {tag_prefix}{entry.title}{author_suffix}")
-            if entry.description:
-                # Indent description under the bullet
+            if include_descriptions and entry.description:
                 for desc_line in entry.description.strip().splitlines():
                     lines.append(f"    {desc_line}")
         text = "\n".join(lines)
@@ -124,12 +125,14 @@ def build_blocks(
 def post_report(
     entries_by_section: dict[str, list[ChangelogEntry]],
     since: str,
+    *,
+    include_descriptions: bool = False,
 ) -> None:
     """Post the changelog report to Slack."""
     if not config.SLACK_BOT_TOKEN:
         raise RuntimeError("SLACK_BOT_TOKEN environment variable is required to post")
     client = WebClient(token=config.SLACK_BOT_TOKEN)
-    blocks = build_blocks(entries_by_section, since)
+    blocks = build_blocks(entries_by_section, since, include_descriptions=include_descriptions)
 
     # Extract fallback text from the header block
     fallback = blocks[0]["text"]["text"] if blocks else f"Changelog Report (since {since})"
