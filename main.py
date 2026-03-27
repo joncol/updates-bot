@@ -15,6 +15,10 @@ def main() -> None:
         help="ISO date to look back from (default: 7 days ago)",
     )
     parser.add_argument(
+        "--author",
+        help="Filter commits by author (name or email). Default: current git user",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the Slack message instead of posting it",
@@ -23,7 +27,7 @@ def main() -> None:
 
     since = args.since or (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
 
-    entries_by_section = collect_entries(since)
+    entries_by_section = collect_entries(since, author=args.author)
 
     if args.dry_run:
         import json

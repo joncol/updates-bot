@@ -1,6 +1,7 @@
 report:
   #!/usr/bin/env bash
-  if [ -z "$since" ]; then
-    since=$(date -d '7 days ago' +%Y-%m-%d)
+  set -x
+  if [ -z "$SINCE" ]; then
+    SINCE=$(date -d '7 days ago' +%Y-%m-%d)
   fi
-  python main.py --since "$since"
+  python main.py --since "$SINCE" --author "$(git config get user.email)"
