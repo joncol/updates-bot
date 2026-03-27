@@ -16,29 +16,15 @@ class ChangelogEntry:
     description: str | None
     source_file: str
     tag: str | None
+    author: str | None
 
 
-def _default_git_author() -> str:
-    """Return the current git user.email from the kontrakcja repo config."""
-    result = subprocess.run(
-        ["git", "config", "user.email"],
-        cwd=config.KONTRAKCJA_REPO,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
-
-
-def get_new_changelog_files(since: str, author: str | None = None) -> list[str]:
-    """Return changelog .yaml filenames added since `since` (ISO date or git ref).
+def get_new_changelog_files(since: str, author: str | None = None) -> dict[str, str]:
+    """Return a mapping of changelog .yaml relative paths to their commit author.
 
     Uses git log on the kontrakcja repo to find newly added files.
     If *author* is given, only commits by that author are considered.
-    Defaults to the current git user.email when *author* is ``None``.
     """
-    if author is None:
-        author = _default_git_author()
-
     cmd = [
         "git",
         "log",
@@ -46,7 +32,7 @@ def get_new_changelog_files(since: str, author: str | None = None) -> list[str]:
         f"--since={since}",
         "--diff-filter=A",
         "--name-only",
-        "--pretty=format:",
+        "--pretty=format:COMMIT_AUTHOR:%aN",
     ]
     if author:
         cmd.append(f"--author={author}")
@@ -61,8 +47,17 @@ def get_new_changelog_files(since: str, author: str | None = None) -> list[str]:
         text=True,
         check=True,
     )
-    files = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    return sorted(set(files))
+    file_to_author: dict[str, str] = {}
+    current_author = ""
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("COMMIT_AUTHOR:"):
+            current_author = line.removeprefix("COMMIT_AUTHOR:")
+        elif line not in file_to_author:
+            file_to_author[line] = current_author
+    return file_to_author
 
 
 def read_file_from_git(rel_path: str) -> str | None:
@@ -96,7 +91,9 @@ def read_file_from_git(rel_path: str) -> str | None:
     return result.stdout
 
 
-def parse_changelog_yaml(content: str, filename: str) -> list[ChangelogEntry]:
+def parse_changelog_yaml(
+    content: str, filename: str, author: str | None = None
+) -> list[ChangelogEntry]:
     """Parse changelog YAML content, returning one entry per document."""
     entries = []
     for record in yaml.safe_load_all(content):
@@ -118,6 +115,7 @@ def parse_changelog_yaml(content: str, filename: str) -> list[ChangelogEntry]:
                 description=record.get("description"),
                 source_file=filename,
                 tag=tag,
+                author=author,
             )
         )
     return entries
@@ -138,12 +136,11 @@ def collect_entries(
     since: str, author: str | None = None
 ) -> dict[str, list[ChangelogEntry]]:
     """Collect all new changelog entries since `since`, grouped by section."""
-    changelog_dir = pathlib.Path(config.CHANGELOG_DIR)
-    new_files = get_new_changelog_files(since, author=author)
+    file_to_author = get_new_changelog_files(since, author=author)
 
     entries_by_section: dict[str, list[ChangelogEntry]] = {}
     included_sections = set(config.SECTION_DISPLAY_ORDER)
-    for rel_path in new_files:
+    for rel_path, commit_author in file_to_author.items():
         filepath = pathlib.Path(config.KONTRAKCJA_REPO) / rel_path
         if filepath.exists():
             content = filepath.read_text()
@@ -152,7 +149,7 @@ def collect_entries(
         if content is None:
             continue
         filename = pathlib.Path(rel_path).name
-        for entry in parse_changelog_yaml(content, filename):
+        for entry in parse_changelog_yaml(content, filename, author=commit_author):
             if entry.section in included_sections:
                 entries_by_section.setdefault(entry.section, []).append(entry)
 

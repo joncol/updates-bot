@@ -16,7 +16,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--author",
-        help="Filter commits by author (name or email). Default: current git user",
+        help="Filter commits by author (name or email). Default: all authors",
     )
     parser.add_argument(
         "--dry-run",

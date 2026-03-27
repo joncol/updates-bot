@@ -13,13 +13,25 @@ def build_blocks(
     """Build Slack Block Kit blocks from grouped changelog entries."""
     blocks: list[dict] = []
 
+    # Determine if there's a single author across all entries
+    all_authors = {
+        entry.author
+        for entries in entries_by_section.values()
+        for entry in entries
+        if entry.author
+    }
+    single_author = all_authors.pop() if len(all_authors) == 1 else None
+
     # Header
+    header = f"Changelog Report (since {since})"
+    if single_author:
+        header += f" — {single_author}"
     blocks.append(
         {
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": f"Changelog Report (since {since})",
+                "text": header,
             },
         }
     )
@@ -73,7 +85,8 @@ def build_blocks(
         lines = []
         for entry in entries:
             tag_prefix = f"<https://scriveab.atlassian.net/browse/{entry.tag}|[{entry.tag}]> " if entry.tag else ""
-            lines.append(f"• {tag_prefix}{entry.title}")
+            author_suffix = f" — _{entry.author}_" if not single_author and entry.author else ""
+            lines.append(f"• {tag_prefix}{entry.title}{author_suffix}")
             if entry.description:
                 # Indent description under the bullet
                 for desc_line in entry.description.strip().splitlines():
@@ -118,8 +131,10 @@ def post_report(
     client = WebClient(token=config.SLACK_BOT_TOKEN)
     blocks = build_blocks(entries_by_section, since)
 
+    # Extract fallback text from the header block
+    fallback = blocks[0]["text"]["text"] if blocks else f"Changelog Report (since {since})"
     client.chat_postMessage(
         channel=config.SLACK_CHANNEL,
-        text=f"Changelog Report (since {since})",
+        text=fallback,
         blocks=blocks,
     )
